@@ -41,14 +41,13 @@ int main(void){
                 fprintf(stderr,"Error - pthread_create() return code: %d\n", iret[cnt]);
                 exit(EXIT_FAILURE);
             }
-            pthread_join(tid[cnt], NULL);
         }
         printf("\n");
     }
 
-    // for(int i=0; i<total; i++){
-    //     pthread_join(tid[i], NULL);
-    // }
+    for(int i=0; i<total; i++){
+        pthread_join(tid[i], NULL);
+    }
 
     shmdt(matrix);
     shmctl(shmid, IPC_RMID, NULL);
