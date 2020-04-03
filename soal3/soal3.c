@@ -28,7 +28,7 @@ int main(int argc, char **argv){
     } else{
         if((!strcmp(argv[1], "*") && argc==2) || (!strcmp(argv[1], "-d") && argc==3)){
             if(!strcmp(argv[1], "-d")){
-                chdir(argv[2]);
+                // chdir(argv[2]);
                 strcat(workFolder, argv[2]);
             }
             DIR *folder;
@@ -36,7 +36,12 @@ int main(int argc, char **argv){
             folder = opendir(workFolder);
             if(folder){
                 while((directory = readdir(folder)) != NULL){
-                    char finalDir[1000] = "/soal3/";
+                    char finalDir[1000] = "/soal3";
+                    if(!strcmp(argv[1], "-d")){
+                        strcat(finalDir, argv[2]);
+                    } else{
+                        strcat(finalDir, "/");
+                    }
                     strcat(finalDir, directory->d_name);
                     struct stat buffer;
                     stat(finalDir, &buffer);
@@ -70,10 +75,17 @@ void *moveFile(void *args){
         strcpy(target, "Unknown");
     } else{
         strcpy(target, fileEks);
+        for(int i=0; i<strlen(target); i++){
+            if(target[i]>64 && target[i]<91){
+                target[i] += 32;
+            }
+        }
     }
 
     if(mkdir(target, 0777) == -1);
-    if(argtemp[1] != "-f"){
+    if(argtemp[1] != "-f" && argtemp[1] != "*"){
+        snprintf(srcDir, 1000, "%s/soal3%s/%s", rootDir, argtemp[2], (char *)args);
+    } else if(argtemp[1] != "-f"){
         snprintf(srcDir, 1000, "%s/soal3/%s", rootDir, (char *)args);
     }
     snprintf(targetDir, 1000, "%s/%s/%s", rootDir, target, namaFile((char *) args));
