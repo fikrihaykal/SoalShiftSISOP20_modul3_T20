@@ -23,24 +23,27 @@ int main(void){
     int shmid = shmget(key, sizeof(matrix), IPC_CREAT | 0666);
     matrix = shmat(shmid, 0, 0);
 
+    int cnt=0;
     for(int i=1; i<x+1; i++){
         for(int j=1; j<z+1; j++){
-            int cnt= (i*j)-1;
             printf("%d\t", matrix[cnt]);
+            cnt++;
         }
         printf("\n");
     }
+    printf("\n");
 
+    cnt=0;
     for(int i=1; i<x+1; i++){
         for(int j=1; j<z+1; j++){
-            int cnt= (i*j)-1;
-
             pthread_attr_init(&attr);
             iret[cnt] = pthread_create(&tid[cnt], &attr, hitung, &matrix[cnt]);
             if(iret[cnt]){
                 fprintf(stderr,"Error - pthread_create() return code: %d\n", iret[cnt]);
                 exit(EXIT_FAILURE);
             }
+            pthread_join(tid[cnt], NULL);
+            cnt++;
         }
         printf("\n");
     }

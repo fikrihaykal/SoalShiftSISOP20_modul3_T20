@@ -18,6 +18,7 @@ pthread_attr_t attr;
 int iret[x*z];
 key_t key = 1234;
 int *matrix;
+int cnt=0;
 
 void *hitung(void *arguments);
 
@@ -34,28 +35,26 @@ int main(void){
 
     for(int i=1; i<x+1; i++){
         for(int j=1; j<z+1; j++){
-            int cnt= (i*j)-1;
-            struct arg_struct args;
-            args.arg1 = i-1;
-            args.arg2 = j-1;
-
+            struct arg_struct *args = (struct arg_struct *) malloc(sizeof(struct arg_struct));
+            args->arg1 = i-1;
+            args->arg2 = j-1;
             pthread_attr_init(&attr);
-            iret[cnt] = pthread_create(&tid[cnt], &attr, hitung, (void *)&args);
+            iret[cnt] = pthread_create(&tid[cnt], &attr, hitung, args);
             if(iret[cnt]){
                 fprintf(stderr,"Error - pthread_create() return code: %d\n", iret[cnt]);
                 exit(EXIT_FAILURE);
             }
-        pthread_join(tid[cnt], NULL);
+            cnt++;
         }
     }
 
-    for(int i=0; i<total; i++){
-        pthread_join(tid[i], NULL);
-    }
-
+    cnt=0;
     for(int i=0; i<x; i++){
         for(int j=0; j<z; j++){
+            pthread_join(tid[cnt], NULL);
             printf("%d\t", hasil[i][j]);
+            matrix[cnt] = hasil[i][j];
+            cnt++;
         }
         printf("\n");
     }
@@ -77,7 +76,5 @@ void *hitung(void *arguments){
     }
 
     hasil[d1][d2] = temp;
-    // printf("%d ", hasil[i][j]);
-    matrix[(d1+1)*(d2+1)-1] = hasil[d1][d2];
     pthread_exit(0);
 }
