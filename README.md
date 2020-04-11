@@ -57,13 +57,145 @@ Perintah 3 : `./soal \*`<br />
 Digunakan untuk memindah seluruh file dari folder yang baru diunzip dari file `soal3.zip`<br />
 
 ### Penjelasan Script yang ada di dalam file _soal3.c_<br />
+- Input library
+```
+#include <stdio.h>
+#include <string.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <dirent.h>
+#include <ctype.h>
+```
+
+- Deklarasi variabel
+```
+pthread_t tid[100];
+
+void *moveFile(void *args);
+char *namaFile(char str[]);
+char rootDir[100] = "/home/fikri/Modul3/revisi/soal3";
+int temp=0;
+char **argtemp;
+```
+
+- Jika argument bertipe `-f`<br />
+```
+    argtemp = argv;
+    char workFolder[200] = "./soal3";
+    if(!strcmp(argv[1], "-f") && argc>2){
+        for(int i=2; argv[i]!=NULL; i++){
+            pthread_create(&tid[++temp], NULL, &moveFile, argv[i]);
+        }
+```
+
+- Membuka direktori, dan jika bertipe `-d` maka mengubah string untuk direktori<br />
+```
+        if((!strcmp(argv[1], "*") && argc==2) || (!strcmp(argv[1], "-d") && argc==3)){
+            if(!strcmp(argv[1], "-d")){
+                strcat(workFolder, argv[2]);
+            }
+            DIR *folder;
+            struct dirent *directory;
+            folder = opendir(workFolder);
+```
+
+- Memanggil fungsi `moveFile()` dengan menggunakan `pthread`<br />
+```
+                while((directory = readdir(folder)) != NULL){
+                    char finalDir[1000] = "/soal3";
+                    if(!strcmp(argv[1], "-d")){
+                        strcat(finalDir, argv[2]);
+                    } else{
+                        strcat(finalDir, "/");
+                    }
+                    strcat(finalDir, directory->d_name);
+                    struct stat buffer;
+                    stat(finalDir, &buffer);
+                    if(directory->d_type == 8){
+                        pthread_create(&tid[++temp], NULL, &moveFile, directory->d_name);
+                    }
+                }
+```
+
+- Memanggil fungsi `pthread_join()`<br />
+```
+    for(int i=0; i<temp+1; i++){
+        pthread_join(tid[i], NULL);
+    }
+
+    return 0;
+```
+
+- Mengambil ekstensi sebuah file, dan mengubah menjadi lowercase<br />
+```
+if(fileEks == NULL){
+        strcpy(target, "Unknown");
+    } else{
+        strcpy(target, fileEks);
+        for(int i=0; i<strlen(target); i++){
+            if(target[i]>64 && target[i]<91){
+                target[i] += 32;
+            }
+        }
+    }
+```
+
+- Menghilangkan titik `.` pada string ekstensi file<br />
+```
+    int i=0;
+    while(target[i] != 0){
+        if(target[i] != '.'){
+            strncat(dumpFolder, &target[i], 1);
+        }
+        i++;
+    }
+```
+
+- Mendefinisikan lokasi awal dan target file yang akan dipindah <br />
+```
+    if(mkdir(dumpFolder, 0777) == -1);
+
+    if(!strcmp(argtemp[1], "*")){
+        snprintf(srcDir, 1000, "%s/soal3/%s", rootDir, namaFile((char *) args));
+    } else if(!strcmp(argtemp[1], "-d")){
+        snprintf(srcDir, 1000, "%s/soal3%s%s", rootDir, argtemp[2], namaFile((char *) args));
+    } else if(!strcmp(argtemp[1], "-f")){
+        snprintf(srcDir, 1000, "%s/soal3%s", rootDir, argtemp[2]);
+    }
+    snprintf(targetDir, 1000, "%s/%s/%s", rootDir, dumpFolder, namaFile((char *) args));
+
+    rename(srcDir, targetDir);
+```
+
+- Fungsi untuk mengambil nama file<br />
+```
+char* namaFile(char str[]){
+    char* pch;
+    char* result;
+    pch = strchr(str,'/');
+    if(pch == NULL)
+        return str;
+    while (pch != NULL) {
+        result = pch+1;
+        pch = strchr(pch+1,'/');
+    }
+    return result;
+}
+```
 
 ### Hasil Run program _soal3_ saat dijalankan pada Linux
 - Perintah 1 : `./soal -d /adjaisd/`<br />
+Memindah file didalam folder `/soal3/adjaisd/`<br />
 
 - Perintah 2 : `./soal -f /folderku/namafile.png`<br />
+Memindah file `/soal3/folderku/namafile.png`<br />
 
 - Perintah 3 : `./soal \*`<br />
+Memindah semua file dalam folder `/soal3/`<br />
 
 
 
@@ -88,6 +220,101 @@ Syntax : `gcc -pthread soal4a.c -o soal4a`<br />
 Syntax : `./soal4a`<br />
 
 ### Penjelasan Script yang ada di dalam file _soal4a.c_<br />
+- Input library<br />
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+```
+
+- Deklarasi variabel dan fungsi<br />
+```
+#define x 4
+#define y 2
+#define z 5
+
+const int matrix1[x][y] = {{1, 2}, {3, 4}, {5, 6}, {7, 8}};
+const int matrix2[y][z] = {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}};
+int hasil[x][z];
+
+pthread_t tid[x*z];
+pthread_attr_t attr;
+int iret[x*z];
+key_t key = 1234;
+int *matrix;
+int cnt=0;
+
+void *hitung(void *arguments);
+
+struct arg_struct{
+    int arg1;
+    int arg2;
+};
+```
+
+- Mengalokasikan _shared memory_<br />
+```
+    int shmid = shmget(key, sizeof(matrix), IPC_CREAT | 0666);
+    matrix = shmat(shmid, 0, 0);
+```
+
+- Memanggil fungsi hitung sesuai `x dan y` matriks hasil dengan `pthread`<br />
+```
+    for(int i=1; i<x+1; i++){
+        for(int j=1; j<z+1; j++){
+            struct arg_struct *args = (struct arg_struct *) malloc(sizeof(struct arg_struct));
+            args->arg1 = i-1;
+            args->arg2 = j-1;
+            pthread_attr_init(&attr);
+            iret[cnt] = pthread_create(&tid[cnt], &attr, hitung, args);
+            if(iret[cnt]){
+                fprintf(stderr,"Error - pthread_create() return code: %d\n", iret[cnt]);
+                exit(EXIT_FAILURE);
+            }
+            cnt++;
+        }
+    }
+```
+
+- Memanggil fungsi `pthread_join()` serta memasukkan hasil matriks ke _shared memory_<br />
+```
+cnt=0;
+    for(int i=0; i<x; i++){
+        for(int j=0; j<z; j++){
+            pthread_join(tid[cnt], NULL);
+            printf("%d\t", hasil[i][j]);
+            matrix[cnt] = hasil[i][j];
+            cnt++;
+        }
+        printf("\n");
+    }
+
+    shmdt(matrix);
+
+    return 0;
+```
+
+- Fungsi untuk menghitung hasil perkalian matriks<br />
+```
+void *hitung(void *arguments){
+    struct arg_struct *args = arguments;
+
+    int temp = 0;
+    int d1=args->arg1;
+    int d2=args->arg2;
+
+    for(int i=0; i<y; i++){
+        temp = temp + (matrix1[d1][i] * matrix2[i][d2]);
+    }
+
+    hasil[d1][d2] = temp;
+    pthread_exit(0);
+}
+```
+
 
 ### Hasil Run program _soal4a_ saat dijalankan pada Linux
 - Syntax : `./soal4a`<br />
@@ -123,6 +350,95 @@ Syntax : `gcc -pthread soal4b.c -o soal4b`<br />
 Syntax : `./soal4b`<br />
 
 ### Penjelasan Script yang ada di dalam file _soal4b.c_<br />
+- Input library<br />
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+```
+
+- Deklarasi variabel dan fungsi<br />
+```
+#define x 4
+#define y 2
+#define z 5
+
+pthread_t tid[x*z];
+pthread_attr_t attr;
+int iret[x*z];
+key_t key = 1234;
+int *matrix;
+
+void *hitung(void *arguments);
+```
+
+- Mengalokasikan _shared memory_<br />
+```
+    int shmid = shmget(key, sizeof(matrix), IPC_CREAT | 0666);
+    matrix = shmat(shmid, 0, 0);
+```
+
+- Menampilkan matriks dari _shared memory_<br />
+```
+    int cnt=0;
+    for(int i=1; i<x+1; i++){
+        for(int j=1; j<z+1; j++){
+            printf("%d\t", matrix[cnt]);
+            cnt++;
+        }
+        printf("\n");
+    }
+    printf("\n");
+```
+
+- Memanggil fungsi hitung untuk setiap elemen matriks dengan fungsi `pthread_create()`<br />
+```
+    cnt=0;
+    for(int i=1; i<x+1; i++){
+        for(int j=1; j<z+1; j++){
+            pthread_attr_init(&attr);
+            iret[cnt] = pthread_create(&tid[cnt], &attr, hitung, &matrix[cnt]);
+            if(iret[cnt]){
+                fprintf(stderr,"Error - pthread_create() return code: %d\n", iret[cnt]);
+                exit(EXIT_FAILURE);
+            }
+            pthread_join(tid[cnt], NULL);
+            cnt++;
+        }
+        printf("\n");
+    }
+```
+
+- Memanggil fungsi `pthread_join`<br />
+```
+    for(int i=0; i<total; i++){
+        pthread_join(tid[i], NULL);
+    }
+```
+
+- Menutup shared memory<br />
+```
+    shmdt(matrix);
+    shmctl(shmid, IPC_RMID, NULL);
+
+    return 0;
+```
+
+- Fungsi untuk menghitung permutasi tambah tiap elemen matriks <br />
+```
+void *hitung(void *arguments){
+    int temp=0;
+    int c = *((int *)arguments);
+    for(c; c>0; c--){
+        temp=temp+c;
+    }
+    printf("%d\t", temp);
+    pthread_exit(0);
+}
+```
 
 ### Hasil Run program _soal4b_ saat dijalankan pada Linux
 - Syntax : `./soal4b`<br />
@@ -147,6 +463,55 @@ Syntax : `gcc soal4c.c -o soal4c`<br />
 Syntax : `./soal4c`<br />
 
 ### Penjelasan Script yang ada di dalam file _soal4c.c_<br />
+- Input library<br />
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <wait.h>
+```
+
+- Menggunakan fungsi `fork()`<br />
+```
+    int fd[2];
+    
+    pid_t pid1;
+    int status;
+
+    pipe(fd);
+
+    pid1 = fork();
+
+    if(pid1 < 0){
+        exit(EXIT_FAILURE);
+    }
+```
+
+- Melakukan fungsi `execv()` serta menyimpannya pada pipe `fd[1]` dengan dup2<br />
+```
+    if(pid1 == 0){
+        dup2(fd[1], 1);
+        close(fd[0]);
+        close(fd[1]);
+        char *argv[] = {"ls", NULL};
+        execv("/bin/ls", argv);
+    } 
+```
+
+- Membaca pipe `fd[0]` dengan dup2 dan melanjutkan fungsi `execv()`<br />
+```
+else{
+        while(wait(&status) > 0);
+        dup2(fd[0], 0);
+        close(fd[0]);
+        close(fd[1]);
+        char *argv[] = {"wc", "-l", NULL};
+        execv("/usr/bin/wc", argv);
+    }
+```
 
 ### Hasil Run program _soal4c_ saat dijalankan pada Linux
 - Syntax : `./soal4c`<br />
