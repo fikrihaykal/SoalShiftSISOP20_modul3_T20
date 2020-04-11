@@ -13,7 +13,7 @@ pthread_t tid[100];
 
 void *moveFile(void *args);
 char *namaFile(char str[]);
-char rootDir[100] = "/home/fikri/Modul3/soal3";
+char rootDir[100] = "/home/fikri/Modul3/revisi/soal3";
 int temp=0;
 char **argtemp;
 
@@ -23,12 +23,10 @@ int main(int argc, char **argv){
     if(!strcmp(argv[1], "-f") && argc>2){
         for(int i=2; argv[i]!=NULL; i++){
             pthread_create(&tid[++temp], NULL, &moveFile, argv[i]);
-            // printf("%s\n", argv[i]);
         }
     } else{
         if((!strcmp(argv[1], "*") && argc==2) || (!strcmp(argv[1], "-d") && argc==3)){
             if(!strcmp(argv[1], "-d")){
-                // chdir(argv[2]);
                 strcat(workFolder, argv[2]);
             }
             DIR *folder;
@@ -45,11 +43,8 @@ int main(int argc, char **argv){
                     strcat(finalDir, directory->d_name);
                     struct stat buffer;
                     stat(finalDir, &buffer);
-                    if(!S_ISDIR(buffer.st_mode)){
-                        // printf("%s\n", directory->d_name);
+                    if(directory->d_type == 8){
                         pthread_create(&tid[++temp], NULL, &moveFile, directory->d_name);
-
-                        pthread_join(tid[temp], NULL);
                     }
                 }
             }
@@ -59,7 +54,7 @@ int main(int argc, char **argv){
     }
         
     for(int i=0; i<temp+1; i++){
-        // pthread_join(tid[i], NULL);
+        pthread_join(tid[i], NULL);
     }
 
     return 0;
@@ -68,10 +63,11 @@ int main(int argc, char **argv){
 void *moveFile(void *args){
     pthread_t pid=pthread_self();
     char *fileEks;
-    char target[1000];
+    char target[1000], dumpFolder[1000];
     char srcDir[1000], targetDir[1000];
     fileEks = strrchr(namaFile((char *)args), '.');
-    if(fileEks== NULL){
+
+    if(fileEks == NULL){
         strcpy(target, "Unknown");
     } else{
         strcpy(target, fileEks);
@@ -82,23 +78,26 @@ void *moveFile(void *args){
         }
     }
 
-    if(mkdir(target, 0777) == -1);
-    if(argtemp[1] != "-f" && argtemp[1] != "*"){
-        snprintf(srcDir, 1000, "%s/soal3%s/%s", rootDir, argtemp[2], (char *)args);
-    } else if(argtemp[1] != "-f"){
-        snprintf(srcDir, 1000, "%s/soal3/%s", rootDir, (char *)args);
-    }
-    snprintf(targetDir, 1000, "%s/%s/%s", rootDir, target, namaFile((char *) args));
-
-    if(argtemp[1] == "-f"){
-        rename((char *)args, targetDir);
-        printf("%s to %s\n", (char*)args, targetDir);
-    } else{
-        rename(srcDir, targetDir);
-        printf("%s to %s\n", srcDir, targetDir);
+    int i=0;
+    while(target[i] != 0){
+        if(target[i] != '.'){
+            strncat(dumpFolder, &target[i], 1);
+        }
+        i++;
     }
 
-    // remove(srcDir);
+    if(mkdir(dumpFolder, 0777) == -1);
+
+    if(!strcmp(argtemp[1], "*")){
+        snprintf(srcDir, 1000, "%s/soal3/%s", rootDir, namaFile((char *) args));
+    } else if(!strcmp(argtemp[1], "-d")){
+        snprintf(srcDir, 1000, "%s/soal3%s%s", rootDir, argtemp[2], namaFile((char *) args));
+    } else if(!strcmp(argtemp[1], "-f")){
+        snprintf(srcDir, 1000, "%s/soal3%s", rootDir, argtemp[2]);
+    }
+    snprintf(targetDir, 1000, "%s/%s/%s", rootDir, dumpFolder, namaFile((char *) args));
+
+    rename(srcDir, targetDir);
 }
 
 char* namaFile(char str[]){
