@@ -190,13 +190,15 @@ char* namaFile(char str[]){
 ### Hasil Run program _soal3_ saat dijalankan pada Linux
 - Perintah 1 : `./soal -d /adjaisd/`<br />
 Memindah file didalam folder `/soal3/adjaisd/`<br />
+![soal3d](https://user-images.githubusercontent.com/16980689/79046214-bb905580-7c39-11ea-87b8-421bb214aca4.png) <br />
 
 - Perintah 2 : `./soal -f /folderku/namafile.png`<br />
 Memindah file `/soal3/folderku/namafile.png`<br />
+![soal3f](https://user-images.githubusercontent.com/16980689/79046221-d2cf4300-7c39-11ea-8659-6846fbb72bcc.png) <br />
 
 - Perintah 3 : `./soal \*`<br />
 Memindah semua file dalam folder `/soal3/`<br />
-
+![soal3a](https://user-images.githubusercontent.com/16980689/79046178-871c9980-7c39-11ea-9225-f75751ab3574.png) <br />
 
 
 ## Nomor 4
@@ -318,7 +320,7 @@ void *hitung(void *arguments){
 
 ### Hasil Run program _soal4a_ saat dijalankan pada Linux
 - Syntax : `./soal4a`<br />
-
+![soal4a](https://user-images.githubusercontent.com/16980689/79046260-1aee6580-7c3a-11ea-8044-81ec36a5d81f.png) <br />
 
 
 ## Soal 4B
@@ -442,7 +444,7 @@ void *hitung(void *arguments){
 
 ### Hasil Run program _soal4b_ saat dijalankan pada Linux
 - Syntax : `./soal4b`<br />
-
+![soal4b](https://user-images.githubusercontent.com/16980689/79046264-217cdd00-7c3a-11ea-8e4c-d3c3d3317e12.png) <br />
 
 
 ## Soal 4C
@@ -515,6 +517,8 @@ else{
 
 ### Hasil Run program _soal4c_ saat dijalankan pada Linux
 - Syntax : `./soal4c`<br />
+![soal4c](https://user-images.githubusercontent.com/16980689/79046267-26da2780-7c3a-11ea-925e-2aec00e33d50.png) <br />
 
 
 ## KENDALA
+Bobot soal shift semakin susah, mungkin untuk soal shift berikutnya bisa dipermudah :)
